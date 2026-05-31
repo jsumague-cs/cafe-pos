@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Staff | Cafe POS{% endblock %}
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Manager Tools</p>
+        <h2>Add barista accounts for cashier access.</h2>
+    </div>
+</section>
+
+<section class="content-grid products-layout">
+    <div class="panel">
+        <div class="panel-heading">
+            <h3>New barista</h3>
+        </div>
+        <form method="post" action="{{ url_for('staff.add_barista') }}" class="stack-form">
+            <label>
+                Username
+                <input type="text" name="username" required>
+            </label>
+            <label>
+                PIN
+                <input type="password" name="pin" minlength="4" required>
+            </label>
+            <button type="submit">Add barista</button>
+        </form>
+        <p class="hint">Barista accounts can use the POS and print receipts only.</p>
+    </div>
+
+    <div class="panel">
+        <div class="panel-heading">
+            <h3>Accounts</h3>
+            <p>{{ users|length }} account(s)</p>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Reset PIN</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user["username"] }}</td>
+                        <td>{{ user["role"] }}</td>
+                        <td>{% if user["active"] %}Active{% else %}Inactive{% endif %}</td>
+                        <td>{{ user["created_at"] }}</td>
+                        <td>
+                            {% if user["role"] != "manager" %}
+                            <form method="post" action="{{ url_for('staff.reset_pin', user_id=user['id']) }}" class="inline-form compact-form">
+                                <input type="password" name="pin" minlength="4" placeholder="New PIN" required>
+                                <input type="password" name="manager_pin" placeholder="Manager PIN" required>
+                                <button type="submit" class="secondary">Reset</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user["role"] != "manager" %}
+                            <form method="post" action="{{ url_for('staff.update_active', user_id=user['id']) }}" class="inline-form compact-form">
+                                <input type="hidden" name="active" value="{% if user['active'] %}0{% else %}1{% endif %}">
+                                <input type="password" name="manager_pin" placeholder="Manager PIN" required>
+                                <button type="submit" class="secondary">{% if user["active"] %}Deactivate{% else %}Reactivate{% endif %}</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">No accounts yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

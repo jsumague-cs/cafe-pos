@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Login | Cafe POS{% endblock %}
+{% block content %}
+<section class="login-screen">
+    <div class="login-card">
+        <div class="login-hero">
+            <div>
+                <p class="eyebrow">Mont Cafe</p>
+                <h2>Welcome back, crew</h2>
+                <p class="muted">Sign in with your username and PIN to open the counter.</p>
+            </div>
+            <div class="samoyed-card-art">
+                <img class="samoyed-logo samoyed-logo-large" src="{{ url_for('static', filename='image/samoyed-logo.png') }}" alt="Samoyed logo" />
+            </div>
+        </div>
+        <form method="post" class="stack-form">
+            <label>
+                Username
+                <input type="text" name="username" value="barista" required>
+            </label>
+            <label>
+                PIN
+                <input type="password" name="pin" value="1234" required>
+            </label>
+            <button type="submit">Enter POS</button>
+        </form>
+        <form method="post" action="{{ url_for('auth.demo_manager_login') }}" class="demo-login-form">
+            <button type="submit" class="secondary">Demo sign in as manager</button>
+        </form>
+        <p class="hint">Barista demo: <strong>barista</strong> / <strong>1234</strong>. Baristas can only use the cashier POS and print receipts.</p>
+        <p class="hint">Manager access opens Menu and Reports for product updates, categories, sales, and low-stock checks.</p>
+    </div>
+    <div class="login-photo-panel" aria-hidden="true"></div>
+</section>
+{% endblock %}

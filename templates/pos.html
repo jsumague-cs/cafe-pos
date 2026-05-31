@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}POS | Cafe POS{% endblock %}
+{% block content %}
+<section class="hero-card hero-card-samoyed">
+    <div>
+        <p class="eyebrow">Counter View</p>
+        <h2>Serve with care.</h2>
+    </div>
+    <div class="hero-metrics">
+        <div>
+            <span>Menu items</span>
+            <strong>{{ stats["total_products"] }}</strong>
+        </div>
+        <div>
+            <span>Total stock</span>
+            <strong>{{ stats["total_stock"] }}</strong>
+        </div>
+        <div>
+            <span>Low stock</span>
+            <strong>{{ stats["low_stock_count"] }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="content-grid">
+    <div class="panel">
+        <div class="panel-heading">
+            <h3>Menu</h3>
+            <div class="chip-row">
+                <a class="chip {% if not selected_category %}active{% endif %}" href="{{ url_for('pos.dashboard', q=search) }}">All</a>
+                {% for category in categories %}
+                <a class="chip {% if selected_category == category['id'] %}active{% endif %}" href="{{ url_for('pos.dashboard', category=category['id'], q=search) }}">{{ category["category"] }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        <form method="get" action="{{ url_for('pos.dashboard') }}" class="inline-form search-form">
+            {% if selected_category %}
+            <input type="hidden" name="category" value="{{ selected_category }}">
+            {% endif %}
+            <input type="search" name="q" value="{{ search }}" placeholder="Search menu items">
+            <button type="submit">Search</button>
+        </form>
+        <div class="menu-grid">
+            {% for product in products %}
+            <article class="menu-card {% if product['stock'] <= product['low_stock_threshold'] %}menu-card-alert{% endif %}">
+                <p class="menu-category">{{ product["category"] }}</p>
+                <h4>{{ product["name"] }}</h4>
+                <p class="price">PHP {{ '%.2f'|format(product["price"]) }}</p>
+                <p class="muted">Stock: {{ product["stock"] }} | Alert at {{ product["low_stock_threshold"] }}</p>
+                {% if product["stock"] <= product["low_stock_threshold"] %}
+                <p class="stock-warning">Low stock</p>
+                {% endif %}
+                <form method="post" action="{{ url_for('pos.add_to_cart') }}">
+                    <input type="hidden" name="product_id" value="{{ product['id'] }}">
+                    <input type="number" name="quantity" min="1" max="{{ product['stock'] }}" value="1">
+                    <button type="submit" {% if product['stock'] == 0 %}disabled{% endif %}>Add to cart</button>
+                </form>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-heading">
+            <h3>Current ticket</h3>
+            <p>{{ cart|length }} item(s)</p>
+        </div>
+        <div class="cart-list">
+            {% for item in cart %}
+            <div class="cart-item">
+                <div>
+                    <strong>{{ item["name"] }}</strong>
+                    <p>{{ item["quantity"] }} x PHP {{ '%.2f'|format(item["unit_price"]) }}</p>
+                </div>
+                <div class="cart-actions">
+                    <span>PHP {{ '%.2f'|format(item["line_total"]) }}</span>
+                    <form method="post" action="{{ url_for('pos.remove_from_cart', product_id=item['product_id']) }}">
+                        <button type="submit" class="secondary">Remove</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <p class="muted">The cart is empty.</p>
+            {% endfor %}
+        </div>
+        <div class="ticket-total">
+            <span>Total</span>
+            <strong>PHP {{ '%.2f'|format(cart_total) }}</strong>
+        </div>
+        <form method="post" action="{{ url_for('pos.checkout') }}" class="stack-form">
+            <label>
+                Amount received
+                <input type="number" name="amount_received" min="{{ '%.2f'|format(cart_total) }}" step="0.01" placeholder="0.00" required>
+            </label>
+            <label>
+                Payment method
+                <select name="payment_method" required>
+                    <option value="Cash">Cash</option>
+                    <option value="GCash">GCash</option>
+                    <option value="Card">Card</option>
+                </select>
+            </label>
+            <label>
+                Customer name
+                <input type="text" name="customer_name" placeholder="Optional">
+            </label>
+            <button type="submit">Complete sale</button>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <h3>Recent transactions</h3>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cashier</th>
+                    <th>Role</th>
+                    <th>Total</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in recent_transactions %}
+                <tr>
+                    <td>{{ transaction["id"] }}</td>
+                    <td>{{ transaction["username"] }}</td>
+                    <td>{{ transaction["role"] }}</td>
+                    <td>PHP {{ '%.2f'|format(transaction["total_amount"]) }}</td>
+                    <td>{{ transaction["created_at"] }}</td>
+                    <td><a class="text-link" href="{{ url_for('pos.transaction_detail', transaction_id=transaction['id']) }}">View</a></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">No transactions yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

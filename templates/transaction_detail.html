@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Transaction {{ transaction["id"] }} | Cafe POS{% endblock %}
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Transaction Detail</p>
+        <h2>Receipt view for order #{{ transaction["id"] }}</h2>
+    </div>
+    <div class="receipt-actions">
+        <button type="button" onclick="window.print()">Print receipt</button>
+        <a class="chip active" href="{{ return_to_pos }}">Back to POS</a>
+    </div>
+</section>
+
+<section class="receipt-paper">
+    <div class="receipt-header">
+        <h3>{{ shop_name }}</h3>
+        <p>{{ bir_registration }}</p>
+        <p>Customer Receipt</p>
+        <p>{{ transaction["receipt_number"] or ("OR-%06d"|format(transaction["id"])) }}</p>
+        {% if transaction["voided"] %}
+        <p class="void-label">VOIDED</p>
+        {% endif %}
+    </div>
+
+    <div class="receipt-meta">
+        <div>
+            <span>Cashier</span>
+            <strong>{{ transaction["username"] }}</strong>
+        </div>
+        <div>
+            <span>Date</span>
+            <strong>{{ transaction["created_at"] }}</strong>
+        </div>
+    </div>
+    {% if transaction["customer_name"] %}
+    <div class="receipt-payment-line">
+        <span>Customer</span>
+        <strong>{{ transaction["customer_name"] }}</strong>
+    </div>
+    {% endif %}
+
+    <table class="receipt-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item["name"] }}</td>
+                <td>{{ item["quantity"] }}</td>
+                <td>PHP {{ '%.2f'|format(item["price_at_sale"]) }}</td>
+                <td>PHP {{ '%.2f'|format(item["line_total"]) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="receipt-total">
+        <span>Total Amount</span>
+        <strong>PHP {{ '%.2f'|format(transaction["total_amount"]) }}</strong>
+    </div>
+    <div class="receipt-payment-line">
+        <span>Amount Received</span>
+        <strong>PHP {{ '%.2f'|format(transaction["amount_received"]) }}</strong>
+    </div>
+    <div class="receipt-payment-line">
+        <span>Payment Method</span>
+        <strong>{{ transaction["payment_method"] }}</strong>
+    </div>
+    <div class="receipt-payment-line">
+        <span>Change</span>
+        <strong>PHP {{ '%.2f'|format(transaction["change_amount"]) }}</strong>
+    </div>
+    {% if transaction["voided"] %}
+    <div class="receipt-payment-line">
+        <span>Void Reason</span>
+        <strong>{{ transaction["void_reason"] }}</strong>
+    </div>
+    {% endif %}
+
+    <p class="receipt-thanks">Thank you for your purchase!</p>
+</section>
+
+<section class="stats-grid screen-only">
+    <article class="stat-card">
+        <span>Cashier</span>
+        <strong>{{ transaction["username"] }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Role</span>
+        <strong>{{ transaction["role"] }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Total</span>
+        <strong>PHP {{ '%.2f'|format(transaction["total_amount"]) }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Change</span>
+        <strong>PHP {{ '%.2f'|format(transaction["change_amount"]) }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Created</span>
+        <strong>{{ transaction["created_at"] }}</strong>
+    </article>
+</section>
+
+{% if session["user"]["role"] == "manager" and not transaction["voided"] %}
+<section class="panel screen-only">
+    <div class="panel-heading">
+        <h3>Void transaction</h3>
+    </div>
+    <form method="post" action="{{ url_for('pos.void', transaction_id=transaction['id']) }}" class="stack-form">
+        <label>
+            Reason
+            <input type="text" name="reason" required>
+        </label>
+        <label>
+            Manager PIN
+            <input type="password" name="manager_pin" required>
+        </label>
+        <button type="submit" class="secondary">Void and restore stock</button>
+    </form>
+</section>
+{% endif %}
+
+<section class="panel screen-only">
+    <div class="panel-heading">
+        <h3>Items sold</h3>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Qty</th>
+                    <th>Unit price</th>
+                    <th>Line total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item["name"] }}</td>
+                    <td>{{ item["category"] }}</td>
+                    <td>{{ item["quantity"] }}</td>
+                    <td>PHP {{ '%.2f'|format(item["price_at_sale"]) }}</td>
+                    <td>PHP {{ '%.2f'|format(item["line_total"]) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

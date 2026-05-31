@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Reports | Cafe POS{% endblock %}
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Daily Summary</p>
+        <h2>Track revenue, best sellers, stock risk, and category momentum.</h2>
+    </div>
+    <button type="button" onclick="window.print()">Print report</button>
+</section>
+
+<section class="panel screen-only">
+    <form method="get" action="{{ url_for('reports.index') }}" class="inline-form report-filter-form">
+        <select name="preset">
+            <option value="" {% if not filters["preset"] %}selected{% endif %}>Custom</option>
+            <option value="today" {% if filters["preset"] == "today" %}selected{% endif %}>Today</option>
+            <option value="week" {% if filters["preset"] == "week" %}selected{% endif %}>Last 7 days</option>
+        </select>
+        <input type="date" name="start_date" value="{{ filters['start_date'] }}">
+        <input type="date" name="end_date" value="{{ filters['end_date'] }}">
+        <button type="submit">Apply</button>
+        <a class="chip" href="{{ url_for('reports.index') }}">Clear</a>
+    </form>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card">
+        <span>Transactions</span>
+        <strong>{{ summary["transaction_count"] }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Revenue</span>
+        <strong>PHP {{ '%.2f'|format(summary["revenue"]) }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Average ticket</span>
+        <strong>PHP {{ '%.2f'|format(summary["average_ticket"]) }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Best ticket</span>
+        <strong>PHP {{ '%.2f'|format(summary["best_ticket"]) }}</strong>
+    </article>
+</section>
+
+<section class="content-grid reports-layout">
+    <div class="panel">
+        <div class="panel-heading">
+            <h3>Best sellers</h3>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty sold</th>
+                        <th>Sales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in summary["top_items"] %}
+                    <tr>
+                        <td>{{ item["name"] }}</td>
+                        <td>{{ item["qty_sold"] }}</td>
+                        <td>PHP {{ '%.2f'|format(item["sales"]) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3">No completed sales yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-heading">
+            <h3>Low stock watch</h3>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Category</th>
+                        <th>Stock</th>
+                        <th>Threshold</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in summary["low_stock_items"] %}
+                    <tr>
+                        <td>{{ item["name"] }}</td>
+                        <td>{{ item["category"] }}</td>
+                        <td>{{ item["stock"] }}</td>
+                        <td>{{ item["low_stock_threshold"] }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">All items are above threshold.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <h3>Category sales</h3>
+    </div>
+    <div class="chart-list">
+        {% for row in summary["category_chart"] %}
+        <div class="chart-row">
+            <div class="chart-label">
+                <strong>{{ row["category"] }}</strong>
+                <span>PHP {{ '%.2f'|format(row["sales"]) }}</span>
+            </div>
+            <div class="chart-bar-track">
+                <div class="chart-bar-fill" style="width: {{ row['percent'] }}%;"></div>
+            </div>
+        </div>
+        {% else %}
+        <p class="muted">No category sales yet.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <h3>Recent transactions</h3>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>OR No.</th>
+                    <th>Cashier</th>
+                    <th>Role</th>
+                    <th>Payment</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in recent_transactions %}
+                <tr>
+                    <td>{{ transaction["id"] }}</td>
+                    <td>{{ transaction["receipt_number"] }}</td>
+                    <td>{{ transaction["username"] }}</td>
+                    <td>{{ transaction["role"] }}</td>
+                    <td>{{ transaction["payment_method"] }}</td>
+                    <td>PHP {{ '%.2f'|format(transaction["total_amount"]) }}</td>
+                    <td>{% if transaction["voided"] %}Voided{% else %}Completed{% endif %}</td>
+                    <td>{{ transaction["created_at"] }}</td>
+                    <td><a class="text-link" href="{{ url_for('pos.transaction_detail', transaction_id=transaction['id']) }}">View</a></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9">No recent transactions yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
